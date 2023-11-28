@@ -7,11 +7,6 @@ permissions:
 on:
   workflow_call:
     inputs:
-      IMAGE_NAME:
-        description: 'Image name'
-        required: true
-        default: 'backend-server'
-        type: string
       JAVA_VERSION:
         description: 'Java version'
         required: true
