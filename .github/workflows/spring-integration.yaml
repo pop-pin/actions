@@ -1,0 +1,44 @@
+name: Integration
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  workflow_call:
+    inputs:
+      MYSQL_ROOT_PASSWORD:
+        description: 'MySQL password'
+        required: true
+        default: '1234'
+        type: string
+      MYSQL_DATABASE:
+        description: 'MySQL database'
+        required: true
+        default: 'poppin'
+        type: string
+      JAVA_VERSION:
+        description: 'Java version'
+        required: true
+        default: '17'
+        type: string
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK ${{ inputs.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ inputs.JAVA_VERSION }}
+          distribution: 'corretto'
+
+      - name: Launch test DB
+        run: docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=${{ inputs.MYSQL_ROOT_PASSWORD }} -e MYSQL_DATABASE=${{ inputs.MYSQL_DATABASE }} mysql:8.0
+
+      - name: Test with Gradle
+        run: |
+          ./gradlew test

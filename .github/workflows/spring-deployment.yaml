@@ -1,0 +1,67 @@
+name: "Workflow : Pull Request"
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_NAME:
+        description: 'Image name'
+        required: true
+        default: 'backend-server'
+        type: string
+      JAVA_VERSION:
+        description: 'Java version'
+        required: true
+        default: '17'
+        type: string
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'Dockerhub username'
+        required: true
+      DOCKERHUB_ACCESS_TOKEN:
+        description: 'Dockerhub access token'
+        required: true
+      DISCORD_WEBHOOK:
+        description: 'Discord webhook'
+        required: true
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK ${{ inputs.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ inputs.JAVA_VERSION }}
+          distribution: 'corretto'
+
+      - name: Login Dockerhub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Download Opentelemetry Instrumentation
+        run: |
+          mkdir -p src/main/jib/otel
+          curl -o 'src/main/jib/otel/opentelemetry-javaagent.jar' -L 'https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.29.0/opentelemetry-javaagent.jar'
+
+      - name: Build with Jib
+        run: |
+          ./gradlew jib
+
+      - name: Get Short SHA
+        id: short_sha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          
+      - name: Notify Deployment
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: '`backend-server` deployed with version `${{ steps.short_sha.outputs.sha }}`'
