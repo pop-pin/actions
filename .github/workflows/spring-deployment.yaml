@@ -12,6 +12,11 @@ on:
         required: true
         default: '17'
         type: string
+      SERVICE_NAME:
+        description: 'Service Name'
+        required: false
+        default: 'backend-server'
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         description: 'Dockerhub username'
@@ -59,4 +64,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: '`backend-server` deployed with version `${{ steps.short_sha.outputs.sha }}`'
+          args: '`${{ inputs.SERVICE_NAME }}` deployed with version `${{ steps.short_sha.outputs.sha }}`'
